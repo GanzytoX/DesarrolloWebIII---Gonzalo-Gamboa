@@ -1,0 +1,448 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #2d3748;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+
+.app-container {
+  min-height: 100vh;
+  padding: 2rem;
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  align-items: flex-start;
+  justify-content: center;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.calculator-card {
+  background: #1a202c;
+  border: 1px solid #4a5568;
+  border-radius: 8px;
+  padding: 2rem;
+  width: 500px;
+  flex-shrink: 0;
+}
+
+.app-title {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 500;
+  margin-bottom: 1.5rem;
+  color: #e2e8f0;
+}
+
+.input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.number-input {
+  width: 100%;
+  padding: 0.75rem;
+  background: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.number-input:focus {
+  outline: none;
+  border-color: #3182ce;
+}
+
+.number-input::placeholder {
+  color: #a0aec0;
+}
+
+.operations-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.operation-btn {
+  padding: 0.75rem;
+  background: #3182ce;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.operation-btn:hover {
+  background: #2c5aa0;
+}
+
+.operation-btn:disabled {
+  background: #4a5568;
+  cursor: not-allowed;
+}
+
+.result-container {
+  background: #1a202c;
+  border: 1px solid #4a5568;
+  border-radius: 6px;
+  padding: 1rem;
+  text-align: center;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.result-text {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #48bb78;
+}
+
+.error-text {
+  color: #f56565;
+  font-size: 1rem;
+}
+
+.history-card {
+  background: #1a202c;
+  border: 1px solid #4a5568;
+  border-radius: 8px;
+  padding: 1.5rem;
+  width: 600px;
+  max-height: 600px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.history-title {
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  color: #e2e8f0;
+  text-align: center;
+}
+
+.history-list {
+  list-style: none;
+  padding: 0;
+}
+
+.history-item {
+  background: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.history-item:hover {
+  border-color: #3182ce;
+}
+
+.operation-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.operation-text {
+  font-weight: 500;
+  color: #e2e8f0;
+}
+
+.operation-type {
+  background: #3182ce;
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: white;
+  align-self: flex-start;
+}
+
+.operation-date {
+  font-size: 0.75rem;
+  color: #a0aec0;
+}
+
+.no-history {
+  text-align: center;
+  color: #a0aec0;
+  font-style: italic;
+  padding: 1.5rem;
+}
+
+.history-card::-webkit-scrollbar {
+  width: 4px;
+}
+
+.history-card::-webkit-scrollbar-track {
+  background: #2d3748;
+}
+
+.history-card::-webkit-scrollbar-thumb {
+  background: #3182ce;
+  border-radius: 2px;
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 1rem;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .calculator-card,
+  .history-card {
+    padding: 1rem;
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .operations-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1200px) and (min-width: 769px) {
+  .app-container {
+    padding: 1.5rem;
+  }
+
+  .calculator-card {
+    width: 450px;
+  }
+
+  .history-card {
+    width: 500px;
+  }
+}
+
+/* Estilos para filtros */
+.filters-container {
+  background: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 0.5rem;
+}
+
+.filter-row:last-child {
+  margin-bottom: 0;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 150px;
+  flex: 1;
+}
+
+.filter-label {
+  font-size: 0.8rem;
+  color: #a0aec0;
+  font-weight: 500;
+}
+
+.filter-select,
+.filter-input {
+  padding: 0.5rem;
+  background: #1a202c;
+  border: 1px solid #4a5568;
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  outline: none;
+  border-color: #3182ce;
+}
+
+.filter-select option {
+  background: #1a202c;
+  color: #e2e8f0;
+}
+
+.clear-filters-btn {
+  padding: 0.5rem 1rem;
+  background: #48bb78;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  height: fit-content;
+}
+
+.clear-filters-btn:hover {
+  background: #38a169;
+}
+
+.clear-filters-btn:active {
+  transform: translateY(1px);
+}
+
+@media (max-width: 768px) {
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-group {
+    min-width: unset;
+  }
+}
+
+/* Estilos para números múltiples */
+.numbers-container {
+  margin-bottom: 1rem;
+}
+
+.numbers-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.numbers-header h3 {
+  color: #e2e8f0;
+  font-size: 1rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+.add-number-btn {
+  padding: 0.5rem 1rem;
+  background: #48bb78;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-number-btn:hover {
+  background: #38a169;
+  transform: translateY(-1px);
+}
+
+.add-number-btn:active {
+  transform: translateY(0);
+}
+
+.number-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.number-row:last-child {
+  margin-bottom: 0;
+}
+
+.number-input {
+  flex: 1;
+  padding: 0.75rem;
+  background: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.number-input:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.2);
+}
+
+.remove-number-btn {
+  padding: 0.5rem;
+  background: #e53e3e;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-number-btn:hover {
+  background: #c53030;
+  transform: translateY(-1px);
+}
+
+.remove-number-btn:active {
+  transform: translateY(0);
+}
+
+.remove-number-btn:disabled {
+  background: #4a5568;
+  color: #a0aec0;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.remove-number-btn:disabled:hover {
+  background: #4a5568;
+  transform: none;
+}
+
+@media (max-width: 768px) {
+  .numbers-header {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+
+  .number-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .remove-number-btn {
+    align-self: center;
+    min-width: 120px;
+  }
+}

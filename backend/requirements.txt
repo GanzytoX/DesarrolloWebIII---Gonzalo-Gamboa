@@ -1,0 +1,8 @@
+fastapi[all]
+uvicorn
+pymongo
+httpx
+pytest
+mongomock
+pytz
+pytest-cov
