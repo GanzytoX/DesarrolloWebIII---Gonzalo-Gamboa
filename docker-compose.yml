@@ -10,7 +10,7 @@ services:
     networks: [mongo-network]
 
   calculator:
-    image: calculator-fast-api
+    build: ./backend
     volumes:
       - ./backend:/app
     environment:
