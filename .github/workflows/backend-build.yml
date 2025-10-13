@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build and Push Backend Docker Image
 on:
   push:
     branches:
@@ -28,21 +28,28 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Determine image tags
+      - name: Determine image vars (lowercase) and tag
         id: vars
+        shell: bash
         run: |
-          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          echo "REPO_NAME=${REPO_LOWER}" >> $GITHUB_ENV
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          REPO_ONLY="${GITHUB_REPOSITORY#*/}"
+          REPO_LC=$(echo "${REPO_ONLY}" | tr '[:upper:]' '[:lower:]')
+
+          # Imagen separada para backend
+          echo "IMAGE=ghcr.io/${OWNER_LC}/${REPO_LC}-backend" >> $GITHUB_ENV
+
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            echo "TAG=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+            echo "TAG=${GITHUB_REF_NAME}" >> $GITHUB_ENV   # ej: v1.2.3
           else
-            echo "TAG=latest" >> $GITHUB_ENV
+            echo "TAG=latest" >> $GITHUB_ENV               # push a main
           fi
 
       - name: Build Docker image
+        shell: bash
         run: |
-          docker build -t ghcr.io/${{ env.REPO_NAME }}:${{ env.TAG }} ./backend
+          docker build -t "${{ env.IMAGE }}:${{ env.TAG }}" ./backend
 
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ env.REPO_NAME }}:${{ env.TAG }}
+          docker push "${{ env.IMAGE }}:${{ env.TAG }}"
