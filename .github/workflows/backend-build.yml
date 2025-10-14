@@ -32,9 +32,12 @@ jobs:
         id: vars
         shell: bash
         run: |
-          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          REPO_ONLY="${GITHUB_REPOSITORY#*/}"
-          REPO_LC=$(echo "${REPO_ONLY}" | tr '[:upper:]' '[:lower:]')
+          # ↓↓↓ Convierte TODO owner/repo a minúsculas de una sola vez
+          REPO_FULL_LC=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
+          OWNER_LC="${REPO_FULL_LC%%/*}"
+          REPO_LC="${REPO_FULL_LC#*/}"
+
+          # Imagen separada para backend
           echo "IMAGE=ghcr.io/${OWNER_LC}/${REPO_LC}-backend" >> $GITHUB_ENV
 
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
