@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import "./App.css";
 
 export default function App() {
@@ -25,20 +25,22 @@ export default function App() {
   // ==================== NUMBER MANAGEMENT FUNCTIONS ====================
 
   const addNumber = () => {
-    setNumbers([...numbers, ""]);
+    setNumbers((prev) => [...prev, ""]);
   };
 
   const removeNumber = (index) => {
-    if (numbers.length > 2) {
-      const newNumbers = numbers.filter((_, i) => i !== index);
-      setNumbers(newNumbers);
-    }
+    setNumbers((prev) => {
+      if (prev.length <= 2) return prev;
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const updateNumber = (index, value) => {
-    const newNumbers = [...numbers];
-    newNumbers[index] = value;
-    setNumbers(newNumbers);
+    setNumbers((prev) => {
+      const copy = [...prev];
+      copy[index] = value;
+      return copy;
+    });
   };
 
   // ==================== VALIDATION FUNCTIONS ====================
@@ -84,7 +86,7 @@ export default function App() {
       }
 
       setResult(data.result);
-      getHistory();
+      getHistory(); // se llama a la versión memoizada
     } catch (err) {
       setError(err.message);
       setResult(null);
@@ -95,7 +97,7 @@ export default function App() {
 
   // ==================== HISTORY MANAGEMENT ====================
 
-  const getHistory = async () => {
+  const getHistory = useCallback(async () => {
     try {
       const res = await fetch("http://localhost:8089/calculator/history");
       const data = await res.json();
@@ -103,13 +105,13 @@ export default function App() {
       console.log("History data:", data);
 
       if (res.ok) {
-        setCompleteHistory(data.history);
-        applyFilters(data.history);
+        setCompleteHistory(data.history || []);
+        applyFilters(data.history || []);
       }
     } catch (err) {
       console.error("Error getting history:", err);
     }
-  };
+  }, [applyFilters]);
 
   // ==================== UTILITY FUNCTIONS ====================
 
@@ -119,65 +121,88 @@ export default function App() {
 
   const getOperationSymbol = (operation) => {
     const symbols = {
+      // nombres "nuevos"
       sum: "+",
       subtract: "-",
-      multiplication: "×",
+      substract: "-", // alias común
+      multiply: "×",
       division: "÷",
-      // Keep old operation names for compatibility
+      divide: "÷",
+      // nombres "viejos" o alternativos
       suma: "+",
       resta: "-",
       multiplicacion: "×",
+      multiplication: "×",
     };
     return symbols[operation] || "?";
   };
 
+  // Normaliza nombres de operación para comparar filtros y datos:
+  const normalizeOperation = (op) => {
+    const map = {
+      substract: "subtract",
+      multiplication: "multiply",
+      multiplicacion: "multiply",
+      division: "divide",
+      suma: "sum",
+      resta: "subtract",
+    };
+    return map[op] || op;
+  };
+
   // ==================== FILTER FUNCTIONS ====================
 
-  const applyFilters = (data = completeHistory) => {
-    let filteredHistory = [...data];
+  const applyFilters = useCallback(
+    (data = completeHistory) => {
+      let filteredHistory = [...data];
 
-    // Filter by operation type
-    if (operationFilter !== "all") {
-      filteredHistory = filteredHistory.filter(
-        (op) => op.operation === operationFilter
-      );
-    }
-
-    // Filter by date
-    if (dateFilter) {
-      filteredHistory = filteredHistory.filter((op) =>
-        op.date.includes(dateFilter)
-      );
-    }
-
-    // Sort
-    filteredHistory.sort((a, b) => {
-      let valueA, valueB;
-
-      if (sortBy === "date") {
-        // Convert date dd/mm/yyyy hh:mm to Date for comparison
-        const parseDate = (dateStr) => {
-          const [datePart, timePart] = dateStr.split(" ");
-          const [day, month, year] = datePart.split("/");
-          const [hours, minutes] = timePart.split(":");
-          return new Date(year, month - 1, day, hours, minutes);
-        };
-        valueA = parseDate(a.date);
-        valueB = parseDate(b.date);
-      } else if (sortBy === "result") {
-        valueA = a.result;
-        valueB = b.result;
+      // Filter by operation type
+      if (operationFilter !== "all") {
+        filteredHistory = filteredHistory.filter(
+          (op) =>
+            normalizeOperation(op.operation) ===
+            normalizeOperation(operationFilter)
+        );
       }
 
-      if (sortDirection === "asc") {
-        return valueA > valueB ? 1 : -1;
-      } else {
-        return valueA < valueB ? 1 : -1;
+      // Filter by date
+      if (dateFilter) {
+        filteredHistory = filteredHistory.filter((op) =>
+          (op.date || "").includes(dateFilter)
+        );
       }
-    });
 
-    setHistory(filteredHistory);
-  };
+      // Sort
+      filteredHistory.sort((a, b) => {
+        let valueA, valueB;
+
+        if (sortBy === "date") {
+          // Convert date dd/mm/yyyy hh:mm to Date for comparison
+          const parseDate = (dateStr = "") => {
+            const [datePart = "", timePart = "00:00"] = dateStr.split(" ");
+            const [day = "01", month = "01", year = "1970"] =
+              datePart.split("/");
+            const [hours = "00", minutes = "00"] = timePart.split(":");
+            return new Date(year, Number(month) - 1, day, hours, minutes);
+          };
+          valueA = parseDate(a.date);
+          valueB = parseDate(b.date);
+        } else if (sortBy === "result") {
+          valueA = a.result;
+          valueB = b.result;
+        }
+
+        if (sortDirection === "asc") {
+          return valueA > valueB ? 1 : -1;
+        } else {
+          return valueA < valueB ? 1 : -1;
+        }
+      });
+
+      setHistory(filteredHistory);
+    },
+    [operationFilter, dateFilter, sortBy, sortDirection, completeHistory]
+  );
 
   const clearFilters = () => {
     setOperationFilter("all");
@@ -190,11 +215,11 @@ export default function App() {
 
   useEffect(() => {
     getHistory();
-  }, []);
+  }, [getHistory]);
 
   useEffect(() => {
     applyFilters();
-  }, [operationFilter, dateFilter, sortBy, sortDirection, completeHistory]);
+  }, [applyFilters]);
 
   // ==================== RENDER ====================
 
@@ -247,7 +272,7 @@ export default function App() {
           </button>
           <button
             className="operation-btn"
-            onClick={() => performOperation("substract")}
+            onClick={() => performOperation("substract")} // backend usa "substract"
             disabled={isLoading}>
             - Subtract
           </button>
@@ -272,7 +297,7 @@ export default function App() {
           {result !== null && !error && !isLoading && (
             <div className="result-text">Result: {result}</div>
           )}
-          {!result && !error && !isLoading && (
+          {result === null && !error && !isLoading && (
             <div style={{ color: "#6b7280" }}>Select an operation</div>
           )}
         </div>
@@ -294,8 +319,8 @@ export default function App() {
                 <option value="all">All</option>
                 <option value="sum">Sum</option>
                 <option value="subtract">Subtract</option>
-                <option value="multiplication">Multiplication</option>
-                <option value="division">Division</option>
+                <option value="multiply">Multiply</option>
+                <option value="divide">Divide</option>
               </select>
             </div>
 
@@ -359,7 +384,9 @@ export default function App() {
                           op.b
                         } = ${op.result}`}
                   </div>
-                  <div className="operation-type">{op.operation}</div>
+                  <div className="operation-type">
+                    {normalizeOperation(op.operation)}
+                  </div>
                 </div>
                 <div className="operation-date">{formatDate(op.date)}</div>
               </li>
