@@ -6,11 +6,9 @@ on:
     tags: ["v*.*.*"] # publica versiones cuando haces push de un tag semver
     paths:
       - "frontend/**" # solo corre si cambian archivos del frontend
-      - ".github/workflows/frontend-build.yml"
   pull_request:
     paths:
       - "frontend/**" # valida en PR que toca frontend
-      - ".github/workflows/frontend-build.yml"
   workflow_dispatch: {} # botón "Run workflow" en Actions
 
 permissions:
