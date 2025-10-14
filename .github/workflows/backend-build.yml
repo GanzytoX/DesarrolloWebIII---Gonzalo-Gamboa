@@ -1,10 +1,13 @@
-name: Build and Push Docker Image
-
+name: Build and Push Backend Docker Image
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
     tags:
-      - "v*.*.*"
+      - "v*"
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-build.yml"
 
 jobs:
   build:
@@ -12,7 +15,7 @@ jobs:
 
     permissions:
       contents: read
-      packages: write # Necesario para subir a GHCR
+      packages: write
 
     steps:
       - name: Checkout code
@@ -25,12 +28,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Determine image tags
+      - name: Determine image vars (lowercase) and tag
         id: vars
+        shell: bash
         run: |
-          # Convertir el nombre del repositorio a minúsculas
-          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          echo "REPO_NAME=${REPO_LOWER}" >> $GITHUB_ENV
+          # ↓↓↓ Convierte TODO owner/repo a minúsculas de una sola vez
+          REPO_FULL_LC=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
+          OWNER_LC="${REPO_FULL_LC%%/*}"
+          REPO_LC="${REPO_FULL_LC#*/}"
+
+          # Imagen separada para backend
+          echo "IMAGE=ghcr.io/${OWNER_LC}/${REPO_LC}-backend" >> $GITHUB_ENV
 
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             echo "TAG=${GITHUB_REF_NAME}" >> $GITHUB_ENV
@@ -38,10 +46,15 @@ jobs:
             echo "TAG=latest" >> $GITHUB_ENV
           fi
 
+      - name: Show image (debug)
+        run: |
+          echo "IMAGE=${{ env.IMAGE }}"
+          echo "TAG=${{ env.TAG }}"
+
       - name: Build Docker image
         run: |
-          docker build -t ghcr.io/${{ env.REPO_NAME }}:${{ env.TAG }} ./backend
+          docker build -t "${{ env.IMAGE }}:${{ env.TAG }}" ./backend
 
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ env.REPO_NAME }}:${{ env.TAG }}
+          docker push "${{ env.IMAGE }}:${{ env.TAG }}"
