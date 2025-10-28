@@ -3,15 +3,13 @@ name: Backend - Build & Push
 on:
   push:
     branches: ["main"]
-    tags: ["v*.*.*"]
+    tags: ["v*.*.*"] # publica versiones cuando haces push de un tag semver
     paths:
       - "backend/**"
-      - ".github/workflows/backend-build.yml"
   pull_request:
     paths:
       - "backend/**"
-      - ".github/workflows/backend-build.yml"
-  workflow_dispatch: {}
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -28,6 +26,7 @@ concurrency:
 jobs:
   docker:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,10 +50,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
+            # latest solo en la default branch (main)
             type=raw,value=latest,enable={{is_default_branch}}
-            type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            # sha para trazabilidad
             type=sha
 
       - name: Build & Push image
