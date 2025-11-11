@@ -9,7 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 from prometheus_fastapi_instrumentator import Instrumentator
-from logging import logger
+
+# Import logger from custom logging configuration
+from logger_config import logger
 
 # ==================== PYDANTIC MODELS ====================
 class BatchOperation(BaseModel):
@@ -39,6 +41,10 @@ MONGO_URL = os.getenv(
 mongo_client = MongoClient(MONGO_URL)
 database = mongo_client.practica1
 collection_historial = database.historial
+
+# ==================== PROMETHEUS INSTRUMENTATION ====================
+# Instrument the app with Prometheus metrics and expose /metrics endpoint
+instrumentator = Instrumentator().instrument(app).expose(app)
 
 # ==================== UTILITY FUNCTIONS ====================
 def get_datetime():
