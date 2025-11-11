@@ -2,10 +2,7 @@ fastapi
 uvicorn
 pymongo
 pytz
-pytest
-coverage
-httpx
-mongomock
+pytest-cov
 prometheus-fastapi-instrumentator
 loki-logger-handler
 requests
