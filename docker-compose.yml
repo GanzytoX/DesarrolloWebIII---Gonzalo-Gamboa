@@ -27,9 +27,10 @@ services:
     networks: [mongo-network]
 
   calculadora:
-    image: ghcr.io/${GHCR_OWNER}/${GHCR_REPO}-backend:${BACKEND_TAG}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     platform: linux/amd64
-    pull_policy: always
     environment:
       MONGO_URL: mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@mongo:27017/?authSource=admin
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -43,9 +44,10 @@ services:
         condition: service_started
 
   frontend:
-    image: ghcr.io/${GHCR_OWNER}/${GHCR_REPO}-frontend:${FRONTEND_TAG}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     platform: linux/amd64
-    pull_policy: always
     environment:
       REACT_APP_API_URL: http://calculadora:8000
       VITE_API_URL: http://calculadora:8000
