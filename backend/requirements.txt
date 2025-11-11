@@ -1,6 +1,9 @@
 fastapi
 uvicorn
 pymongo
+httpx
+pytest
+mongomock
 pytz
 pytest-cov
 prometheus-fastapi-instrumentator
