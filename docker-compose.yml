@@ -1,65 +1,131 @@
 services:
   mongo:
-    image: mirror.gcr.io/library/mongo:8
+    image: mongo
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin_user
-      MONGO_INITDB_ROOT_PASSWORD: web3
-    ports:
-      - "27020:27017"
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    ports: ["27017:27017"]
+    networks: [mongo-network]
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          mongosh --host 127.0.0.1
+          -u "$$MONGO_INITDB_ROOT_USERNAME" -p "$$MONGO_INITDB_ROOT_PASSWORD"
+          --authenticationDatabase admin --quiet
+          --eval "if (db.runCommand({ping:1}).ok) { quit(0) } else { quit(1) }"
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  mongoclient:
+    image: alpine/mongosh
+    depends_on: { mongo: { condition: service_healthy } }
+    command: ["tail", "-f", "/dev/null"]
+    restart: always
     networks: [mongo-network]
 
-  calculator:
-    build: ./backend
-    volumes:
-      - ./backend:/app
+  calculadora:
+    image: ghcr.io/${GHCR_OWNER}/${GHCR_REPO}-backend:${BACKEND_TAG}
+    platform: linux/amd64
+    pull_policy: always
     environment:
-      - MONGO_URL=mongodb://admin_user:web3@mongo:27017/?authSource=admin
-    depends_on:
-      - mongo
-    ports:
-      - "8089:8000"
+      MONGO_URL: mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@mongo:27017/?authSource=admin
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports: ["8089:8000"]
     networks: [mongo-network]
+    restart: always
+    depends_on:
+      mongo:
+        condition: service_healthy
+      loki:
+        condition: service_started
 
   frontend:
-    build: ./frontend
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+    image: ghcr.io/${GHCR_OWNER}/${GHCR_REPO}-frontend:${FRONTEND_TAG}
+    platform: linux/amd64
+    pull_policy: always
     environment:
-      - CHOKIDAR_USEPOLLING=true
-    depends_on:
-      - calculator
-    networks:
-      - mongo-network
+      REACT_APP_API_URL: http://calculadora:8000
+      VITE_API_URL: http://calculadora:8000
+      CHOKIDAR_USEPOLLING: "true"
+    ports: ["3000:3000"]
+    depends_on: [calculadora]
+    networks: [mongo-network]
+
+  calculadora-tests:
+    image: ghcr.io/${GHCR_OWNER}/${GHCR_REPO}-backend:${BACKEND_TAG}
+    platform: linux/amd64
+    working_dir: /app
+    environment:
+      MONGO_URL: mongodb://admin_user:web3@mongo:27017/?authSource=admin
+    depends_on: { mongo: { condition: service_healthy } }
+    networks: [mongo-network]
+    command: ["pytest", "-q"]
+    profiles: ["test"]
 
   prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
+    image: prom/prometheus
+    container_name: web3_calculadora-prometheus
     volumes:
-      - ./monitoring/prometheus.yaml:/etc/prometheus/prometheus.yaml
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yaml"
+      - ./monitoring/prometheus.yml:/prometheus.yml
+    command: "--config.file=/prometheus.yml"
     ports:
       - "9090:9090"
     networks:
       - mongo-network
-    depends_on:
-      - calculator
-    pull_policy: always
+    restart: unless-stopped
 
   grafana:
     image: grafana/grafana:latest
-    container_name: grafana
+    container_name: web3_calculadora-grafana
     ports:
       - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-storage:/var/lib/grafana
     networks:
       - mongo-network
+    restart: unless-stopped
     depends_on:
       - prometheus
+      - loki
+
+  loki:
+    image: grafana/loki:3.1.0
+    container_name: web3_calculadora-loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./monitoring/loki-config.yaml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    networks:
+      - mongo-network
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:3.1.0
+    container_name: web3_calculadora-promtail
+    depends_on:
+      - loki
+    volumes:
+      - ./monitoring/promtail-config.yaml:/etc/promtail/config.yaml
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yaml
+    networks:
+      - mongo-network
+    restart: unless-stopped
+
+volumes:
+  grafana-storage:
+  loki-data:
 
 networks:
   mongo-network:
+    name: web3_calculadora_mongo-network
     driver: bridge

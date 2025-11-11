@@ -8,6 +8,8 @@ from pymongo import MongoClient
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
+from prometheus_fastapi_instrumentator import Instrumentator
+from logging import logger
 
 # ==================== PYDANTIC MODELS ====================
 class BatchOperation(BaseModel):
@@ -117,6 +119,7 @@ def sum_endpoint(numbers: List[float] = Query(..., description="List of numbers 
     # Number validation
     error = validate_numbers_list(numbers, "sum")
     if error:
+        logger.warning(f"sum validation error: numbers={numbers}")
         return error
     
     result = sum_multiple(numbers)
@@ -129,6 +132,7 @@ def sum_endpoint(numbers: List[float] = Query(..., description="List of numbers 
         "date": get_datetime()
     }
     collection_historial.insert_one(document)
+    logger.info(f"sum completed: numbers={numbers}, result={result}")
     
     return {"numbers": numbers, "result": result}
 
@@ -138,6 +142,7 @@ def substract_endpoint(numbers: List[float] = Query(..., description="List of nu
     # Number validation
     error = validate_numbers_list(numbers, "subtract")
     if error:
+        logger.warning(f"subtract validation error: numbers={numbers}")
         return error
     
     result = subtract_multiple(numbers)
@@ -150,6 +155,7 @@ def substract_endpoint(numbers: List[float] = Query(..., description="List of nu
         "date": get_datetime()
     }
     collection_historial.insert_one(document)
+    logger.info(f"subtract completed: numbers={numbers}, result={result}")
     
     return {"numbers": numbers, "result": result}
 
@@ -159,6 +165,7 @@ def multiply_endpoint(numbers: List[float] = Query(..., description="List of num
     # Number validation
     error = validate_numbers_list(numbers, "multiplication")
     if error:
+        logger.warning(f"multiplication validation error: numbers={numbers}")
         return error
     
     result = multiply_multiple(numbers)
@@ -171,6 +178,7 @@ def multiply_endpoint(numbers: List[float] = Query(..., description="List of num
         "date": get_datetime()
     }
     collection_historial.insert_one(document)
+    logger.info(f"multiplication completed: numbers={numbers}, result={result}")
     
     return {"numbers": numbers, "result": result}
 
@@ -180,11 +188,13 @@ def divide_endpoint(numbers: List[float] = Query(..., description="List of numbe
     # Number validation
     error = validate_numbers_list(numbers, "division")
     if error:
+        logger.warning(f"division validation error: numbers={numbers}")
         return error
     
     # Check for division by zero
     for num in numbers[1:]:
         if num == 0:
+            logger.warning(f"division by zero attempt: numbers={numbers}")
             return create_custom_error(
                 "Division by zero",
                 "division",
@@ -202,6 +212,7 @@ def divide_endpoint(numbers: List[float] = Query(..., description="List of numbe
         "date": get_datetime()
     }
     collection_historial.insert_one(document)
+    logger.info(f"division completed: numbers={numbers}, result={result}")
     
     return {"numbers": numbers, "result": result}
 
@@ -224,6 +235,7 @@ def batch_operations(request: List[BatchOperation]):
                 "operands": numbers
             }
             results.append(result)
+            logger.warning(f"batch invalid operands count: operation={operation}, operands={numbers}")
             continue
         
         a, b = numbers[0], numbers[1]
@@ -236,6 +248,7 @@ def batch_operations(request: List[BatchOperation]):
                 "operands": [a, b]
             }
             results.append(result)
+            logger.warning(f"batch negative operands: operation={operation}, operands={[a, b]}")
             continue
         
         # Process according to operation type
@@ -254,6 +267,7 @@ def batch_operations(request: List[BatchOperation]):
                         "operands": [a, b]
                     }
                     results.append(result)
+                    logger.warning(f"batch division by zero: operands={[a, b]}")
                     continue
                 result = a / b
             else:
@@ -263,6 +277,7 @@ def batch_operations(request: List[BatchOperation]):
                     "operands": [a, b]
                 }
                 results.append(result)
+                logger.warning(f"batch unsupported operation: operation={operation}, operands={[a, b]}")
                 continue
             
             # If we get here, the operation was successful
@@ -271,6 +286,7 @@ def batch_operations(request: List[BatchOperation]):
                 "result": result
             }
             results.append(result)
+            logger.info(f"batch operation completed: operation={operation}, operands={[a, b]}, result={result['result']}")
             
             # Save to history
             document = {
@@ -289,8 +305,13 @@ def batch_operations(request: List[BatchOperation]):
                 "operands": [a, b]
             }
             results.append(result)
+            logger.error(f"batch internal error: operation={operation}, operands={[a, b]}, error={str(e)}")
     
     return results
+
+# ==================== PROMETHEUS INSTRUMENTATION ====================
+# Instrument the app with Prometheus metrics
+instrumentator = Instrumentator().instrument(app).expose(app)
 
 # ==================== HISTORY ENDPOINT ====================
 

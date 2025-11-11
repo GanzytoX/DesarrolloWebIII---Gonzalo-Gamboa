@@ -1,8 +1,11 @@
-fastapi[all]
+fastapi
 uvicorn
 pymongo
-httpx
-pytest
-mongomock
 pytz
-pytest-cov
+pytest
+coverage
+httpx
+mongomock
+prometheus-fastapi-instrumentator
+loki-logger-handler
+requests
