@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: "calculadora-backend"
+    static_configs:
+      - targets: ["calculadora:8000"]

@@ -442,3 +442,14 @@ site/
 # Archivos de sistema
 .DS_Store
 Thumbs.db
+
+# ==================== MONITORING ====================
+# Loki data
+loki-data/
+monitoring/loki-data/
+
+# Grafana data
+grafana-storage/
+
+# Prometheus data
+prometheus-data/
