@@ -69,8 +69,8 @@ services:
     image: prom/prometheus
     container_name: web3_calculadora-prometheus
     volumes:
-      - ./monitoring/prometheus.yml:/prometheus.yml
-    command: "--config.file=/prometheus.yml"
+      - ./monitoring:/etc/prometheus
+    command: "--config.file=/etc/prometheus/prometheus.yaml"
     ports:
       - "9090:9090"
     networks:
