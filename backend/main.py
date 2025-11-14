@@ -125,22 +125,25 @@ def sum_endpoint(numbers: List[float] = Query(..., description="List of numbers 
     # Number validation
     error = validate_numbers_list(numbers, "sum")
     if error:
-        logger.warning(f"sum validation error: numbers={numbers}")
+        logger.error(f"sum validation error: numbers={numbers}")
         return error
-    
-    result = sum_multiple(numbers)
-    
-    # Save to history
-    document = {
-        "numbers": numbers,
-        "result": result,
-        "operation": "sum",
-        "date": get_datetime()
-    }
-    collection_historial.insert_one(document)
-    logger.info(f"sum completed: numbers={numbers}, result={result}")
-    
-    return {"numbers": numbers, "result": result}
+    try:
+        result = sum_multiple(numbers)
+        
+        # Save to history
+        document = {
+            "numbers": numbers,
+            "result": result,
+            "operation": "sum",
+            "date": get_datetime()
+        }
+        collection_historial.insert_one(document)
+        logger.info(f"sum completed: numbers={numbers}, result={result}")
+        
+        return {"numbers": numbers, "result": result}
+    except Exception as e:
+        logger.error(f"sum internal error: numbers={numbers}, error={str(e)}")
+        return create_custom_error(f"Internal error: {str(e)}", "sum", numbers, 500)
 
 @app.get("/calculator/substract")
 def substract_endpoint(numbers: List[float] = Query(..., description="List of numbers to subtract")):
@@ -148,22 +151,25 @@ def substract_endpoint(numbers: List[float] = Query(..., description="List of nu
     # Number validation
     error = validate_numbers_list(numbers, "subtract")
     if error:
-        logger.warning(f"subtract validation error: numbers={numbers}")
+        logger.error(f"subtract validation error: numbers={numbers}")
         return error
-    
-    result = subtract_multiple(numbers)
-    
-    # Save to history
-    document = {
-        "numbers": numbers,
-        "result": result,
-        "operation": "subtract",
-        "date": get_datetime()
-    }
-    collection_historial.insert_one(document)
-    logger.info(f"subtract completed: numbers={numbers}, result={result}")
-    
-    return {"numbers": numbers, "result": result}
+    try:
+        result = subtract_multiple(numbers)
+        
+        # Save to history
+        document = {
+            "numbers": numbers,
+            "result": result,
+            "operation": "subtract",
+            "date": get_datetime()
+        }
+        collection_historial.insert_one(document)
+        logger.info(f"subtract completed: numbers={numbers}, result={result}")
+        
+        return {"numbers": numbers, "result": result}
+    except Exception as e:
+        logger.error(f"subtract internal error: numbers={numbers}, error={str(e)}")
+        return create_custom_error(f"Internal error: {str(e)}", "subtract", numbers, 500)
 
 @app.get("/calculator/multiply")
 def multiply_endpoint(numbers: List[float] = Query(..., description="List of numbers to multiply")):
@@ -171,22 +177,25 @@ def multiply_endpoint(numbers: List[float] = Query(..., description="List of num
     # Number validation
     error = validate_numbers_list(numbers, "multiplication")
     if error:
-        logger.warning(f"multiplication validation error: numbers={numbers}")
+        logger.error(f"multiplication validation error: numbers={numbers}")
         return error
-    
-    result = multiply_multiple(numbers)
-    
-    # Save to history
-    document = {
-        "numbers": numbers,
-        "result": result,
-        "operation": "multiplication",
-        "date": get_datetime()
-    }
-    collection_historial.insert_one(document)
-    logger.info(f"multiplication completed: numbers={numbers}, result={result}")
-    
-    return {"numbers": numbers, "result": result}
+    try:
+        result = multiply_multiple(numbers)
+        
+        # Save to history
+        document = {
+            "numbers": numbers,
+            "result": result,
+            "operation": "multiplication",
+            "date": get_datetime()
+        }
+        collection_historial.insert_one(document)
+        logger.info(f"multiplication completed: numbers={numbers}, result={result}")
+        
+        return {"numbers": numbers, "result": result}
+    except Exception as e:
+        logger.error(f"multiplication internal error: numbers={numbers}, error={str(e)}")
+        return create_custom_error(f"Internal error: {str(e)}", "multiplication", numbers, 500)
 
 @app.get("/calculator/divide")
 def divide_endpoint(numbers: List[float] = Query(..., description="List of numbers to divide")):
@@ -194,33 +203,36 @@ def divide_endpoint(numbers: List[float] = Query(..., description="List of numbe
     # Number validation
     error = validate_numbers_list(numbers, "division")
     if error:
-        logger.warning(f"division validation error: numbers={numbers}")
+        logger.error(f"division validation error: numbers={numbers}")
         return error
     
     # Check for division by zero
     for num in numbers[1:]:
         if num == 0:
-            logger.warning(f"division by zero attempt: numbers={numbers}")
+            logger.error(f"division by zero attempt: numbers={numbers}")
             return create_custom_error(
                 "Division by zero",
                 "division",
                 numbers,
                 403
             )
-    
-    result = divide_multiple(numbers)
-    
-    # Save to history
-    document = {
-        "numbers": numbers,
-        "result": result,
-        "operation": "division",
-        "date": get_datetime()
-    }
-    collection_historial.insert_one(document)
-    logger.info(f"division completed: numbers={numbers}, result={result}")
-    
-    return {"numbers": numbers, "result": result}
+    try:
+        result = divide_multiple(numbers)
+        
+        # Save to history
+        document = {
+            "numbers": numbers,
+            "result": result,
+            "operation": "division",
+            "date": get_datetime()
+        }
+        collection_historial.insert_one(document)
+        logger.info(f"division completed: numbers={numbers}, result={result}")
+        
+        return {"numbers": numbers, "result": result}
+    except Exception as e:
+        logger.error(f"division internal error: numbers={numbers}, error={str(e)}")
+        return create_custom_error(f"Internal error: {str(e)}", "division", numbers, 500)
 
 # ==================== BATCH OPERATIONS ENDPOINT ====================
 
@@ -324,33 +336,37 @@ instrumentator = Instrumentator().instrument(app).expose(app)
 @app.get("/calculator/history")
 def get_history():
     """Get operation history endpoint"""
-    operations = collection_historial.find({})
-    history = []
-    
-    for operation in operations:
-        # Handle both string dates and datetime objects
-        date_value = operation["date"]
-        if isinstance(date_value, str):
-            formatted_date = date_value
-        else:
-            # Convert datetime object to Mexico format
-            mexico_tz = pytz.timezone('America/Mexico_City')
-            if hasattr(date_value, 'astimezone'):
-                mexico_time = date_value.astimezone(mexico_tz)
-                formatted_date = mexico_time.strftime('%d/%m/%Y %H:%M')
+    try:
+        operations = collection_historial.find({})
+        history = []
+        
+        for operation in operations:
+            # Handle both string dates and datetime objects
+            date_value = operation["date"]
+            if isinstance(date_value, str):
+                formatted_date = date_value
             else:
-                formatted_date = str(date_value)
-        
-        # Handle both old and new field names for compatibility
-        numbers = operation.get("numbers", operation.get("numeros", [operation.get("a"), operation.get("b")]))
-        result = operation.get("result", operation.get("resultado"))
-        operation_type = operation.get("operation", operation.get("operacion", "unknown"))
-        
-        history.append({
-            "numbers": numbers,
-            "result": result,
-            "operation": operation_type,
-            "date": formatted_date
-        })
+                # Convert datetime object to Mexico format
+                mexico_tz = pytz.timezone('America/Mexico_City')
+                if hasattr(date_value, 'astimezone'):
+                    mexico_time = date_value.astimezone(mexico_tz)
+                    formatted_date = mexico_time.strftime('%d/%m/%Y %H:%M')
+                else:
+                    formatted_date = str(date_value)
+            
+            # Handle both old and new field names for compatibility
+            numbers = operation.get("numbers", operation.get("numeros", [operation.get("a"), operation.get("b")]))
+            result = operation.get("result", operation.get("resultado"))
+            operation_type = operation.get("operation", operation.get("operacion", "unknown"))
+            
+            history.append({
+                "numbers": numbers,
+                "result": result,
+                "operation": operation_type,
+                "date": formatted_date
+            })
 
-    return {"history": history}
+        return {"history": history}
+    except Exception as e:
+        logger.error(f"history internal error: error={str(e)}")
+        return create_custom_error(f"Internal error: {str(e)}", "history", [], 500)
