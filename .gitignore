@@ -283,6 +283,7 @@ frontend/.env.production.local
 **/data/
 **/volumes/
 mongo_data/
+mongo-data/
 
 # Docker Compose override files
 docker-compose.override.yml
