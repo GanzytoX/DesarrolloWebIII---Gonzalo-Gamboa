@@ -35,7 +35,7 @@ app.add_middleware(
 # ==================== DATABASE CONFIGURATION ====================
 MONGO_URL = os.getenv(
     "MONGO_URL",
-    "mongodb://admin_user:web3@localhost:27020/?authSource=admin"
+    "mongodb://admin_user:web3@localhost:27017/?authSource=admin"
 )
 
 mongo_client = MongoClient(MONGO_URL)
